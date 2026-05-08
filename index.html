@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>並行宇宙位相図 | Parallel Universe Phase Diagram</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@200;300;400&family=Cormorant+Garamond:ital,wght@0,200;0,300;1,200;1,300&family=Share+Tech+Mono&display=swap');
+
+:root {
+–void: #00000a;
+–deep: #050510;
+–nebula-blue: #0a0a2e;
+–star-white: #f0f4ff;
+–star-dim: #8090b0;
+–star-glow: #c8d8ff;
+–gold: #c8a96e;
+–heat-death: #ff6040;
+–birth: #40c8ff;
+–accent: #9060ff;
+}
+
+- { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+background: var(–void);
+color: var(–star-white);
+font-family: ‘Share Tech Mono’, monospace;
+overflow: hidden;
+width: 100vw;
+height: 100vh;
+cursor: crosshair;
+}
+
+/* ===== CANVAS ===== */
+#cosmos {
+position: fixed;
+inset: 0;
+z-index: 0;
+}
+
+/* ===== OVERLAY UI ===== */
+#ui {
+position: fixed;
+inset: 0;
+z-index: 10;
+pointer-events: none;
+}
+
+/* Header */
+#header {
+position: absolute;
+top: 0; left: 0; right: 0;
+padding: 28px 40px 20px;
+display: flex;
+justify-content: space-between;
+align-items: flex-start;
+background: linear-gradient(to bottom, rgba(0,0,10,0.9) 0%, transparent 100%);
+pointer-events: none;
+}
+
+#title-block {
+letter-spacing: 0.15em;
+}
+
+#title-en {
+font-family: ‘Cormorant Garamond’, serif;
+font-size: 10px;
+font-weight: 200;
+color: var(–star-dim);
+letter-spacing: 0.3em;
+text-transform: uppercase;
+margin-bottom: 6px;
+}
+
+#title-ja {
+font-family: ‘Noto Serif JP’, serif;
+font-size: 18px;
+font-weight: 200;
+color: var(–star-white);
+letter-spacing: 0.4em;
+}
+
+/* Legend */
+#legend {
+font-size: 9px;
+color: var(–star-dim);
+text-align: right;
+line-height: 2.2;
+letter-spacing: 0.1em;
+}
+
+.legend-item { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.legend-sym { font-size: 11px; }
+.legend-sym.star { color: var(–star-white); }
+.legend-sym.heat { color: var(–heat-death); }
+.legend-sym.birth { color: var(–birth); }
+.legend-sym.end { color: var(–star-dim); }
+
+/* Timeline axis */
+#timeline {
+position: absolute;
+bottom: 40px;
+left: 40px;
+right: 40px;
+display: flex;
+align-items: center;
+gap: 0;
+pointer-events: none;
+}
+
+.timeline-label {
+font-family: ‘Cormorant Garamond’, serif;
+font-size: 9px;
+font-weight: 200;
+color: var(–star-dim);
+letter-spacing: 0.35em;
+text-transform: uppercase;
+white-space: nowrap;
+flex-shrink: 0;
+}
+
+.timeline-line {
+flex: 1;
+height: 1px;
+background: linear-gradient(to right, rgba(128,144,176,0.2), rgba(128,144,176,0.5), rgba(128,144,176,0.2));
+margin: 0 16px;
+position: relative;
+}
+
+.timeline-line::after {
+content: ‘’;
+position: absolute;
+right: -5px; top: -4px;
+width: 0; height: 0;
+border-left: 6px solid rgba(128,144,176,0.5);
+border-top: 4px solid transparent;
+border-bottom: 4px solid transparent;
+}
+
+/* Info panel */
+#info-panel {
+position: absolute;
+top: 50%;
+right: 40px;
+transform: translateY(-50%);
+width: 220px;
+background: rgba(5,5,20,0.85);
+border: 1px solid rgba(128,144,176,0.15);
+padding: 20px;
+opacity: 0;
+transition: opacity 0.4s ease;
+pointer-events: none;
+backdrop-filter: blur(10px);
+}
+
+#info-panel.visible { opacity: 1; }
+
+#info-num {
+font-size: 28px;
+color: var(–gold);
+font-family: ‘Cormorant Garamond’, serif;
+font-weight: 200;
+letter-spacing: 0.1em;
+margin-bottom: 6px;
+}
+
+#info-title {
+font-family: ‘Noto Serif JP’, serif;
+font-size: 12px;
+font-weight: 300;
+color: var(–star-white);
+letter-spacing: 0.15em;
+margin-bottom: 4px;
+}
+
+#info-author {
+font-size: 9px;
+color: var(–star-dim);
+letter-spacing: 0.2em;
+margin-bottom: 16px;
+}
+
+#info-link {
+display: block;
+font-size: 8px;
+letter-spacing: 0.25em;
+text-transform: uppercase;
+color: var(–birth);
+text-decoration: none;
+border: 1px solid rgba(64,200,255,0.3);
+padding: 8px 12px;
+text-align: center;
+transition: all 0.3s ease;
+pointer-events: all;
+}
+
+#info-link:hover {
+background: rgba(64,200,255,0.1);
+border-color: var(–birth);
+color: #fff;
+}
+
+/* Controls hint */
+#controls {
+position: absolute;
+bottom: 70px;
+left: 40px;
+font-size: 8px;
+color: rgba(128,144,176,0.4);
+letter-spacing: 0.2em;
+line-height: 2;
+pointer-events: none;
+}
+
+/* Section labels */
+.section-label {
+position: absolute;
+font-family: ‘Cormorant Garamond’, serif;
+font-size: 9px;
+font-weight: 200;
+color: rgba(128,144,176,0.3);
+letter-spacing: 0.5em;
+text-transform: uppercase;
+writing-mode: vertical-rl;
+pointer-events: none;
+}
+
+/* BGM button */
+#bgm-btn {
+position: fixed;
+bottom: 20px;
+right: 20px;
+z-index: 50;
+background: rgba(5,5,20,0.7);
+border: 1px solid rgba(128,144,176,0.3);
+color: var(--star-dim);
+font-family: 'Share Tech Mono', monospace;
+font-size: 9px;
+letter-spacing: 0.2em;
+padding: 8px 14px;
+cursor: pointer;
+pointer-events: all;
+backdrop-filter: blur(8px);
+transition: all 0.3s ease;
+text-transform: uppercase;
+}
+#bgm-btn:hover {
+border-color: var(--birth);
+color: var(--birth);
+}
+
+/* Scan line effect */
+body::after {
+content: ‘’;
+position: fixed;
+inset: 0;
+background: repeating-linear-gradient(
+0deg,
+transparent,
+transparent 2px,
+rgba(0,0,0,0.03) 2px,
+rgba(0,0,0,0.03) 4px
+);
+pointer-events: none;
+z-index: 100;
+}
+
+/* Vignette */
+body::before {
+content: ‘’;
+position: fixed;
+inset: 0;
+background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,5,0.8) 100%);
+pointer-events: none;
+z-index: 5;
+}
+
+/* Click ripple */
+.ripple {
+position: fixed;
+border: 1px solid rgba(64,200,255,0.6);
+border-radius: 50%;
+pointer-events: none;
+animation: ripple-out 0.6s ease-out forwards;
+z-index: 20;
+}
+
+@keyframes ripple-out {
+from { width: 0; height: 0; opacity: 1; transform: translate(-50%,-50%); }
+to { width: 80px; height: 80px; opacity: 0; transform: translate(-50%,-50%); }
+}
+
+/* Loading */
+#loading {
+position: fixed;
+inset: 0;
+background: var(–void);
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 200;
+transition: opacity 1s ease 0.5s;
+}
+
+#loading.fade { opacity: 0; pointer-events: none; }
+
+#loading-text {
+font-family: ‘Cormorant Garamond’, serif;
+font-size: 11px;
+font-weight: 200;
+color: var(–star-dim);
+letter-spacing: 0.6em;
+text-transform: uppercase;
+animation: pulse-text 2s ease-in-out infinite;
+}
+
+@keyframes pulse-text {
+0%, 100% { opacity: 0.3; }
+50% { opacity: 1; }
+}
+</style>
+
+</head>
+<body>
+
+<audio id="bgm" src="stars.mp3" loop preload="auto"></audio>
+<button id="bgm-btn">♪ bgm off</button>
+
+<div id="loading"><span id="loading-text">mapping the universe</span></div>
+
+<canvas id="cosmos"></canvas>
+
+<div id="ui">
+  <div id="header">
+    <div id="title-block">
+      <div id="title-en">Parallel Universe Phase Diagram</div>
+      <div id="title-ja">並行宇宙位相図</div>
+    </div>
+    <div id="legend">
+      <div class="legend-item"><span class="legend-end">・</span><span>the end / death of the universe</span></div>
+      <div class="legend-item"><span class="legend-sym heat">◎</span><span>heat death of the universe</span></div>
+      <div class="legend-item"><span class="legend-sym birth">✴</span><span>birth of the universe</span></div>
+      <div class="legend-item"><span class="legend-sym star">★</span><span>the universe</span></div>
+    </div>
+  </div>
+
+  <div id="info-panel">
+    <div id="info-num"></div>
+    <div id="info-title"></div>
+    <div id="info-author"></div>
+    <a id="info-link" href="#" target="_blank">→ read story</a>
+  </div>
+
+  <div id="controls">
+    drag to rotate　·　scroll to zoom<br>
+    click ★ to open story
+  </div>
+
+  <div id="timeline">
+    <span class="timeline-label">Past</span>
+    <div class="timeline-line"></div>
+    <span class="timeline-label">Present</span>
+    <div class="timeline-line"></div>
+    <span class="timeline-label">Future</span>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const STORIES = [
+  {
+    id: '⓭S', num: '13', title: 'ｓｔａｒｓ', author: 'U｜しゃぷてんれーおん',
+    url: 'https://tales.note.com/ueu/wrsokuu5gp4dt?ss=wslwbv7l7t0fcs1',
+    era: 'present', x: -0.15, y: 0.1, z: 0.2,
+    color: [200, 220, 255]
+  },
+  {
+    id: '⓮S', num: '14', title: 'グレイブン', author: 'grand_hyena7705',
+    url: 'https://tales.note.com/grand_hyena7705/wgmakm3veza9m?ss=wslty613q5ooo5p',
+    era: 'present', x: 0.05, y: -0.05, z: 0.3,
+    color: [180, 200, 255]
+  },
+  {
+    id: '⓯S', num: '15', title: '4.3光年先', author: 'ainosakebi',
+    url: 'https://tales.note.com/ainosakebi/wc0cbr8nn27i9?ss=wslb00k1vjj9hbb',
+    era: 'present', x: -0.25, y: -0.15, z: 0.1,
+    color: [220, 230, 255]
+  },
+  {
+    id: '㉑S', num: '21', title: 'Thinking Planet', author: 'chiyo_bb',
+    url: 'https://tales.note.com/chiyo_bb/wq26uuvw4j0o8?ss=wslhg8s8pqiv018',
+    era: 'present', x: 0.2, y: 0.2, z: 0.0,
+    color: [190, 210, 255]
+  },
+  {
+    id: '52', num: '52', title: '（未題）', author: 'U｜しゃぷてんれーおん',
+    url: 'https://note.com/ueu/n/n6a5c7ab6558b',
+    era: 'future', x: 0.35, y: -0.1, z: -0.2,
+    color: [64, 200, 255]
+  },
+  {
+    id: '999', num: '999', title: '星枝の鹿', author: 'apt_flea6657',
+    url: 'https://note.com/apt_flea6657/n/nece06b3d6179',
+    era: 'present', x: -0.1, y: 0.35, z: -0.1,
+    color: [255, 200, 160]
+  },
+  {
+    id: '999-2', num: '999-2', title: 'ラオウ', author: 'apt_flea6657',
+    url: 'https://note.com/apt_flea6657/n/n0d3027f00b9d',
+    era: 'present', x: 0.0, y: 0.4, z: 0.05,
+    color: [255, 180, 140]
+  }
+];
+
+// ===== CANVAS SETUP =====
+const canvas = document.getElementById('cosmos');
+const ctx = canvas.getContext('2d');
+
+let W, H, cx, cy;
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  cx = W / 2; cy = H / 2;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ===== CAMERA =====
+let rotX = 0.15, rotY = 0.0;
+let targetRotX = 0.15, targetRotY = 0.0;
+let zoom = 1.0, targetZoom = 1.0;
+let dragging = false, lastMX, lastMY;
+
+window.addEventListener('mousedown', e => { dragging = true; lastMX = e.clientX; lastMY = e.clientY; });
+window.addEventListener('mouseup', () => { dragging = false; });
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  targetRotY += (e.clientX - lastMX) * 0.005;
+  targetRotX += (e.clientY - lastMY) * 0.004;
+  targetRotX = Math.max(-0.8, Math.min(0.8, targetRotX));
+  lastMX = e.clientX; lastMY = e.clientY;
+});
+window.addEventListener('wheel', e => {
+  targetZoom *= e.deltaY > 0 ? 0.9 : 1.1;
+  targetZoom = Math.max(0.4, Math.min(2.5, targetZoom));
+});
+
+// Touch
+let lastTouch = null;
+window.addEventListener('touchstart', e => { lastTouch = e.touches[0]; });
+window.addEventListener('touchmove', e => {
+  if (!lastTouch) return;
+  const t = e.touches[0];
+  targetRotY += (t.clientX - lastTouch.clientX) * 0.006;
+  targetRotX += (t.clientY - lastTouch.clientY) * 0.005;
+  targetRotX = Math.max(-0.8, Math.min(0.8, targetRotX));
+  lastTouch = t;
+  e.preventDefault();
+}, { passive: false });
+
+// ===== 3D PROJECTION =====
+function project3D(x, y, z) {
+  // Rotate around Y axis
+  const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+  let rx = x * cosY + z * sinY;
+  let rz = -x * sinY + z * cosY;
+
+  // Rotate around X axis
+  const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+  let ry = y * cosX - rz * sinX;
+  rz = y * sinX + rz * cosX;
+
+  const fov = 600 * zoom;
+  const scale = fov / (fov + rz * 400);
+  const sx = cx + rx * 600 * scale;
+  const sy = cy + ry * 600 * scale;
+  return { sx, sy, scale, rz };
+}
+
+// ===== STAR FIELD =====
+const STAR_COUNT = 800;
+const stars = [];
+for (let i = 0; i < STAR_COUNT; i++) {
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+  const r = 0.6 + Math.random() * 0.8;
+  stars.push({
+    x: r * Math.sin(phi) * Math.cos(theta),
+    y: r * Math.sin(phi) * Math.sin(theta),
+    z: r * Math.cos(phi),
+    size: Math.random() * 1.2 + 0.2,
+    brightness: Math.random(),
+    twinkle: Math.random() * Math.PI * 2,
+    twinkleSpeed: 0.01 + Math.random() * 0.03
+  });
+}
+
+// Nebula clouds (decorative blobs)
+const NEBULAE = [];
+for (let i = 0; i < 6; i++) {
+  const theta = (i / 6) * Math.PI * 2 + Math.random() * 0.5;
+  const phi = Math.acos(2 * Math.random() - 1);
+  const r = 0.3 + Math.random() * 0.4;
+  NEBULAE.push({
+    x: r * Math.sin(phi) * Math.cos(theta),
+    y: r * Math.sin(phi) * Math.sin(theta),
+    z: r * Math.cos(phi),
+    radius: 60 + Math.random() * 100,
+    hue: [200, 260, 180, 300, 220, 240][i],
+    alpha: 0.03 + Math.random() * 0.05
+  });
+}
+
+// ===== SPECIAL OBJECTS =====
+// heat death (◎), birth (✴), end (・)
+const SPECIALS = [
+  { type: 'heat', sym: '◎', x: 0.4, y: 0.0, z: -0.5, label: 'heat death', era: 'future' },
+  { type: 'heat', sym: '◎', x: -0.35, y: 0.3, z: -0.4, label: 'heat death', era: 'future' },
+  { type: 'birth', sym: '✴', x: 0.3, y: -0.3, z: 0.5, label: 'birth of universe', era: 'past' },
+  { type: 'birth', sym: '✴', x: -0.2, y: 0.1, z: 0.6, label: 'birth of universe', era: 'past' },
+  { type: 'birth', sym: '✴', x: 0.1, y: 0.4, z: 0.4, label: 'birth of universe', era: 'past' },
+  { type: 'end', sym: '·', x: -0.5, y: -0.2, z: -0.3, label: 'end of universe', era: 'past' },
+  { type: 'end', sym: '·', x: 0.3, y: 0.3, z: -0.4, label: 'end of universe', era: 'future' },
+  { type: 'end', sym: '·', x: -0.4, y: -0.4, z: 0.2, label: 'end of universe', era: 'past' },
+];
+
+// ===== HOVER / CLICK =====
+let hoveredStory = null;
+const infoPanel = document.getElementById('info-panel');
+const infoNum = document.getElementById('info-num');
+const infoTitle = document.getElementById('info-title');
+const infoAuthor = document.getElementById('info-author');
+const infoLink = document.getElementById('info-link');
+
+let projectedStories = [];
+
+canvas.addEventListener('mousemove', e => {
+  const mx = e.clientX, my = e.clientY;
+  let found = null;
+  for (const s of projectedStories) {
+    const dist = Math.hypot(mx - s.px, my - s.py);
+    if (dist < s.hitRadius) { found = s; break; }
+  }
+  hoveredStory = found;
+  canvas.style.cursor = found ? 'pointer' : 'crosshair';
+
+  if (found) {
+    infoNum.textContent = found.story.id;
+    infoTitle.textContent = found.story.title;
+    infoAuthor.textContent = found.story.author;
+    infoLink.href = found.story.url;
+    infoPanel.classList.add('visible');
+  } else {
+    infoPanel.classList.remove('visible');
+  }
+});
+
+canvas.addEventListener('click', e => {
+  const mx = e.clientX, my = e.clientY;
+  for (const s of projectedStories) {
+    const dist = Math.hypot(mx - s.px, my - s.py);
+    if (dist < s.hitRadius) {
+      // ripple effect
+      const ripple = document.createElement('div');
+      ripple.className = 'ripple';
+      ripple.style.left = mx + 'px';
+      ripple.style.top = my + 'px';
+      document.body.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 700);
+      window.open(s.story.url, '_blank');
+      break;
+    }
+  }
+});
+
+// ===== ANIMATION =====
+let t = 0;
+let started = false;
+
+function draw() {
+  t++;
+
+  // Smooth camera
+  rotX += (targetRotX - rotX) * 0.08;
+  rotY += (targetRotY - rotY) * 0.08;
+  zoom += (targetZoom - zoom) * 0.08;
+
+  // Auto slow rotation
+  if (!dragging) targetRotY += 0.0003;
+
+  // Clear
+  ctx.fillStyle = '#00000a';
+  ctx.fillRect(0, 0, W, H);
+
+  // Collect projected objects for z-sorting
+  const allObjects = [];
+
+  // Nebulae
+  for (const n of NEBULAE) {
+    const p = project3D(n.x, n.y, n.z);
+    allObjects.push({ type: 'nebula', obj: n, ...p });
+  }
+
+  // Background stars
+  for (const s of stars) {
+    s.twinkle += s.twinkleSpeed;
+    const p = project3D(s.x, s.y, s.z);
+    allObjects.push({ type: 'star', obj: s, ...p });
+  }
+
+  // Specials
+  for (const sp of SPECIALS) {
+    const p = project3D(sp.x, sp.y, sp.z);
+    allObjects.push({ type: 'special', obj: sp, ...p });
+  }
+
+  // Story nodes
+  const newProjected = [];
+  for (const story of STORIES) {
+    const p = project3D(story.x, story.y, story.z);
+    const ps = { story, px: p.sx, py: p.sy, scale: p.scale, rz: p.rz, hitRadius: 20 * p.scale };
+    newProjected.push(ps);
+    allObjects.push({ type: 'story', obj: story, projected: ps, ...p });
+  }
+  projectedStories = newProjected;
+
+  // Sort by rz (far to near)
+  allObjects.sort((a, b) => a.rz - b.rz);
+
+  // Draw
+  for (const item of allObjects) {
+    const { sx, sy, scale } = item;
+    if (sx < -100 || sx > W+100 || sy < -100 || sy > H+100) continue;
+
+    if (item.type === 'nebula') {
+      const n = item.obj;
+      const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, n.radius * scale * zoom);
+      grad.addColorStop(0, `hsla(${n.hue},60%,40%,${n.alpha * 2})`);
+      grad.addColorStop(1, `hsla(${n.hue},60%,20%,0)`);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(sx, sy, n.radius * scale * zoom, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    else if (item.type === 'star') {
+      const s = item.obj;
+      const tw = (Math.sin(s.twinkle) * 0.4 + 0.6);
+      const alpha = s.brightness * tw;
+      const size = s.size * scale * zoom;
+      ctx.fillStyle = `rgba(200,220,255,${alpha * 0.8})`;
+      ctx.beginPath();
+      ctx.arc(sx, sy, Math.max(0.3, size), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    else if (item.type === 'special') {
+      const sp = item.obj;
+      const sz = 14 * scale * zoom;
+      if (sp.type === 'heat') {
+        ctx.save();
+        ctx.font = `${sz}px serif`;
+        ctx.fillStyle = `rgba(255,96,64,${0.4 + Math.sin(t*0.02)*0.1})`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('◎', sx, sy);
+        // glow
+        ctx.shadowColor = '#ff6040';
+        ctx.shadowBlur = 12 * scale;
+        ctx.fillText('◎', sx, sy);
+        ctx.restore();
+      } else if (sp.type === 'birth') {
+        ctx.save();
+        ctx.font = `${sz * 1.1}px serif`;
+        const pulse = Math.sin(t * 0.025 + sp.x * 10) * 0.3 + 0.7;
+        ctx.fillStyle = `rgba(64,200,255,${pulse * 0.6})`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = '#40c8ff';
+        ctx.shadowBlur = 20 * scale;
+        ctx.fillText('✴', sx, sy);
+        ctx.restore();
+      } else {
+        ctx.fillStyle = `rgba(128,144,176,0.25)`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 1.5 * scale * zoom, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    else if (item.type === 'story') {
+      const story = item.obj;
+      const ps = item.projected;
+      const isHovered = hoveredStory === ps;
+      const pulse = Math.sin(t * 0.02 + story.x * 5 + story.y * 3) * 0.3 + 0.7;
+      const starSize = (isHovered ? 6 : 4) * scale * zoom;
+      const [r, g, b] = story.color;
+
+      ctx.save();
+
+      // Outer glow
+      if (isHovered) {
+        const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, 40 * scale * zoom);
+        grad.addColorStop(0, `rgba(${r},${g},${b},0.15)`);
+        grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 40 * scale * zoom, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Glow
+      ctx.shadowColor = `rgb(${r},${g},${b})`;
+      ctx.shadowBlur = (isHovered ? 18 : 8) * scale * zoom;
+
+      // Star symbol ★
+      ctx.font = `${isHovered ? 20 : 14}px serif`;
+      ctx.fillStyle = `rgba(${r},${g},${b},${pulse * (isHovered ? 1.0 : 0.85)})`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('★', sx, sy);
+
+      ctx.shadowBlur = 0;
+
+      // ID label
+      const labelY = sy + (16 + starSize) * scale * zoom;
+      ctx.font = `${10 * scale * zoom}px 'Share Tech Mono', monospace`;
+      ctx.fillStyle = isHovered ? `rgba(${r},${g},${b},1)` : `rgba(${r},${g},${b},0.6)`;
+      ctx.fillText(story.id, sx, labelY);
+
+      ctx.restore();
+    }
+  }
+
+  // Draw connecting lines between stories (faint)
+  ctx.save();
+  ctx.globalAlpha = 0.04;
+  ctx.strokeStyle = '#8090b0';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i < projectedStories.length; i++) {
+    for (let j = i+1; j < projectedStories.length; j++) {
+      const a = projectedStories[i], b = projectedStories[j];
+      const dist = Math.hypot(a.px - b.px, a.py - b.py);
+      if (dist < 200) {
+        ctx.globalAlpha = (1 - dist/200) * 0.06;
+        ctx.beginPath();
+        ctx.moveTo(a.px, a.py);
+        ctx.lineTo(b.px, b.py);
+        ctx.stroke();
+      }
+    }
+  }
+  ctx.restore();
+
+  // Timeline gradient overlay (left=past, right=future)
+  const tlGrad = ctx.createLinearGradient(0, 0, W, 0);
+  tlGrad.addColorStop(0, 'rgba(64,200,255,0.03)');
+  tlGrad.addColorStop(0.5, 'rgba(0,0,0,0)');
+  tlGrad.addColorStop(1, 'rgba(255,96,64,0.03)');
+  ctx.fillStyle = tlGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  requestAnimationFrame(draw);
+}
+
+// Fade out loading screen
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const loading = document.getElementById('loading');
+    loading.classList.add('fade');
+    setTimeout(() => loading.remove(), 1500);
+  }, 1200);
+});
+
+draw();
+
+// ===== BGM =====
+const bgm = document.getElementById('bgm');
+const bgmBtn = document.getElementById('bgm-btn');
+let bgmStarted = false;
+let bgmMuted = false;
+
+function startBGM() {
+  if (bgmStarted) return;
+  bgm.volume = 0.35;
+  bgm.play().then(() => {
+    bgmStarted = true;
+    bgmBtn.textContent = '♪ bgm on';
+  }).catch(() => {});
+}
+
+// 最初のユーザー操作でBGM開始（ブラウザポリシー対応）
+['click','touchstart','keydown'].forEach(ev => {
+  document.addEventListener(ev, startBGM, { once: true });
+});
+
+bgmBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  if (!bgmStarted) {
+    startBGM();
+    return;
+  }
+  bgmMuted = !bgmMuted;
+  bgm.muted = bgmMuted;
+  bgmBtn.textContent = bgmMuted ? '♪ bgm off' : '♪ bgm on';
+});
+</script>
+
+</body>
+</html>
