@@ -227,6 +227,29 @@ writing-mode: vertical-rl;
 pointer-events: none;
 }
 
+/* BGM button */
+#bgm-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 50;
+  background: rgba(5,5,20,0.7);
+  border: 1px solid rgba(128,144,176,0.3);
+  color: rgba(128,144,176,0.8);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  padding: 8px 14px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+}
+#bgm-btn:hover {
+  border-color: #40c8ff;
+  color: #40c8ff;
+}
+
 /* Scan line effect */
 body::after {
 content: ‘’;
@@ -301,6 +324,8 @@ animation: pulse-text 2s ease-in-out infinite;
 </head>
 <body>
 
+<audio id="bgm" src="stars.mp3" loop preload="auto"></audio>
+<button id="bgm-btn">♪ bgm off</button>
 <div id="loading"><span id="loading-text">mapping the universe</span></div>
 
 <canvas id="cosmos"></canvas>
@@ -748,6 +773,33 @@ window.addEventListener('load', () => {
 });
 
 draw();
+
+// ===== BGM =====
+const bgm = document.getElementById('bgm');
+const bgmBtn = document.getElementById('bgm-btn');
+let bgmStarted = false;
+let bgmMuted = false;
+
+function startBGM() {
+  if (bgmStarted) return;
+  bgm.volume = 0.35;
+  bgm.play().then(() => {
+    bgmStarted = true;
+    bgmBtn.textContent = '♪ bgm on';
+  }).catch(() => {});
+}
+
+['click','touchstart','keydown'].forEach(ev => {
+  document.addEventListener(ev, startBGM, { once: true });
+});
+
+bgmBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  if (!bgmStarted) { startBGM(); return; }
+  bgmMuted = !bgmMuted;
+  bgm.muted = bgmMuted;
+  bgmBtn.textContent = bgmMuted ? '♪ bgm off' : '♪ bgm on';
+});
 </script>
 
 </body>
