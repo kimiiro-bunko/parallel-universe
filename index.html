@@ -227,30 +227,6 @@ writing-mode: vertical-rl;
 pointer-events: none;
 }
 
-/* BGM button */
-#bgm-btn {
-position: fixed;
-bottom: 20px;
-right: 20px;
-z-index: 50;
-background: rgba(5,5,20,0.7);
-border: 1px solid rgba(128,144,176,0.3);
-color: var(--star-dim);
-font-family: 'Share Tech Mono', monospace;
-font-size: 9px;
-letter-spacing: 0.2em;
-padding: 8px 14px;
-cursor: pointer;
-pointer-events: all;
-backdrop-filter: blur(8px);
-transition: all 0.3s ease;
-text-transform: uppercase;
-}
-#bgm-btn:hover {
-border-color: var(--birth);
-color: var(--birth);
-}
-
 /* Scan line effect */
 body::after {
 content: ‘’;
@@ -325,9 +301,6 @@ animation: pulse-text 2s ease-in-out infinite;
 </head>
 <body>
 
-<audio id="bgm" src="stars.mp3" loop preload="auto"></audio>
-<button id="bgm-btn">♪ bgm off</button>
-
 <div id="loading"><span id="loading-text">mapping the universe</span></div>
 
 <canvas id="cosmos"></canvas>
@@ -377,19 +350,19 @@ const STORIES = [
     color: [200, 220, 255]
   },
   {
-    id: '22S', num: '22', title: '星の矢は宇宙を知る', author: '藤みけ',
-    url: 'https://tales.note.com/grand_hyena7705/wgmakm3veza9m?ss=wslty613q5ooo5p',
+    id: '㉒S', num: '22', title: '星の矢は宇宙を知る', author: '藤みけ',
+    url: 'https://tales.note.com/hot_orchid3295/ws0c7all91tp3?ss=wsl61fea9o9ts62',
     era: 'present', x: 0.05, y: -0.05, z: 0.3,
     color: [180, 200, 255]
   },
   {
-    id: '⓯S', num: '15', title: '4.3光年先', author: 'もちもち',
-    url: 'https://tales.note.com/hot_orchid3295/ws0c7all91tp3?ss=wsl61fea9o9ts62',
+    id: '⓯S', num: '15', title: '4.3光年先', author: 'ainosakebi',
+    url: 'https://tales.note.com/ainosakebi/wc0cbr8nn27i9?ss=wslb00k1vjj9hbb',
     era: 'present', x: -0.25, y: -0.15, z: 0.1,
     color: [220, 230, 255]
   },
   {
-    id: '㉑S', num: '21', title: 'Thinking Planet', author: '大橋ちよ',
+    id: '㉑S', num: '21', title: 'Thinking Planet', author: 'chiyo_bb',
     url: 'https://tales.note.com/chiyo_bb/wq26uuvw4j0o8?ss=wslhg8s8pqiv018',
     era: 'present', x: 0.2, y: 0.2, z: 0.0,
     color: [190, 210, 255]
@@ -775,37 +748,6 @@ window.addEventListener('load', () => {
 });
 
 draw();
-
-// ===== BGM =====
-const bgm = document.getElementById('bgm');
-const bgmBtn = document.getElementById('bgm-btn');
-let bgmStarted = false;
-let bgmMuted = false;
-
-function startBGM() {
-  if (bgmStarted) return;
-  bgm.volume = 0.35;
-  bgm.play().then(() => {
-    bgmStarted = true;
-    bgmBtn.textContent = '♪ bgm on';
-  }).catch(() => {});
-}
-
-// 最初のユーザー操作でBGM開始（ブラウザポリシー対応）
-['click','touchstart','keydown'].forEach(ev => {
-  document.addEventListener(ev, startBGM, { once: true });
-});
-
-bgmBtn.addEventListener('click', e => {
-  e.stopPropagation();
-  if (!bgmStarted) {
-    startBGM();
-    return;
-  }
-  bgmMuted = !bgmMuted;
-  bgm.muted = bgmMuted;
-  bgmBtn.textContent = bgmMuted ? '♪ bgm off' : '♪ bgm on';
-});
 </script>
 
 </body>
