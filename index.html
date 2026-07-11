@@ -789,8 +789,18 @@ function startBGM() {
   }).catch(() => {});
 }
 
-['click','touchstart','keydown'].forEach(ev => {
-  document.addEventListener(ev, startBGM, { once: true });
+// ページ読み込み時に自動再生を試みる
+window.addEventListener('load', () => {
+  bgm.volume = 0.35;
+  bgm.play().then(() => {
+    bgmStarted = true;
+    bgmBtn.textContent = '♪ bgm on';
+  }).catch(() => {
+    // ブラウザにブロックされた場合は最初のクリックで起動
+    ['click','touchstart','keydown'].forEach(ev => {
+      document.addEventListener(ev, startBGM, { once: true });
+    });
+  });
 });
 
 bgmBtn.addEventListener('click', e => {
