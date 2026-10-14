@@ -245,10 +245,7 @@ pointer-events: none;
   transition: all 0.3s ease;
   text-transform: uppercase;
 }
-#bgm-btn:hover {
-  border-color: #40c8ff;
-  color: #40c8ff;
-}
+#bgm-btn:hover { border-color: #40c8ff; color: #40c8ff; }
 
 /* Scan line effect */
 body::after {
@@ -397,6 +394,12 @@ const STORIES = [
     url: 'https://note.com/ueu/n/n6a5c7ab6558b',
     era: 'future', x: 0.35, y: -0.1, z: -0.2,
     color: [64, 200, 255]
+  },
+  {
+    id: '㊺S', num: '45', title: 'Prototype〜戦場オペレーターの5日間〜', author: '藤みけ',
+    url: 'https://tales.note.com/hot_orchid3295/was7hvr124zky',
+    era: 'present', x: 0.2, y: 0.1, z: -0.25,
+    color: [200, 180, 255]
   },
   {
     id: '999', num: '999', title: '星枝の鹿', author: 'apt_flea6657',
@@ -789,14 +792,12 @@ function startBGM() {
   }).catch(() => {});
 }
 
-// ページ読み込み時に自動再生を試みる
 window.addEventListener('load', () => {
   bgm.volume = 0.35;
   bgm.play().then(() => {
     bgmStarted = true;
     bgmBtn.textContent = '♪ bgm on';
   }).catch(() => {
-    // ブラウザにブロックされた場合は最初のクリックで起動
     ['click','touchstart','keydown'].forEach(ev => {
       document.addEventListener(ev, startBGM, { once: true });
     });
